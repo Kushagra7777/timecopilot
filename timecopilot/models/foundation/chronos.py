@@ -177,24 +177,21 @@ class Chronos(Forecaster):
         ts_col = "ds"
         target_col = "y"
 
-        # check required columns
-        required = set([id_col, ts_col, target_col])
-        if not required.issubset(set(df.columns)):
+        required = {id_col, ts_col, target_col}
+        if not required.issubset(df.columns):
             raise ValueError("missing required columns")
 
-        # separate base and exogenous columns
         base_cols = [id_col, ts_col, target_col]
         exog_cols = []
         for col in df.columns:
             if col not in base_cols:
                 exog_cols.append(col)
 
-
         cols = base_cols + exog_cols
         context_df = df[cols].copy()
         context_df = context_df.sort_values([id_col, ts_col]).reset_index(drop=True)
 
-    # load model
+        # model call
         with self._get_model() as model:
             if not isinstance(model, Chronos2Pipeline):
                 raise ValueError("wrong model type")
@@ -211,38 +208,30 @@ class Chronos(Forecaster):
 
         pred_df = pred_df.rename(columns={id_col: "unique_id", ts_col: "ds"})
 
-    # main prediction column
         if "predictions" not in pred_df.columns:
             raise ValueError("predictions column missing")
 
+        # main forecast
         pred_df[self.alias] = pred_df["predictions"]
 
-    # quantiles
         if qc.quantiles is not None:
-            for q in qc.quantiles:
+            for i, q in enumerate(qc.quantiles):
                 raw_col = str(q)
                 if raw_col in pred_df.columns:
-                    new_name = self.alias + "-q-" + str(int(q * 100))
-                    pred_df[new_name] = pred_df[raw_col]
+                    pred_df[f"{self.alias}-q-{int(q * 100)}"] = pred_df[raw_col]
 
             pred_df = qc.maybe_convert_quantiles_to_level(
                 pred_df,
                 models=[self.alias],
             )
 
-        # keep only final columns
+        # final selection
         final_cols = ["unique_id", "ds", self.alias]
-
         for col in pred_df.columns:
             if col.startswith(self.alias + "-"):
                 final_cols.append(col)
 
-        fcst_df = pred_df[final_cols].copy()
-
-        return fcst_df
-
-
-
+        return pred_df[final_cols].copy()
 
     def forecast(
         self,
