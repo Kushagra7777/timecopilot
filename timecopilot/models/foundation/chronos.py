@@ -163,7 +163,6 @@ class Chronos(Forecaster):
             fcsts_quantiles_np = None
         return fcsts_mean_np, fcsts_quantiles_np
     
-    
 
     def _forecast_chronos2_df(
         self,
