@@ -215,7 +215,7 @@ class Chronos(Forecaster):
         pred_df[self.alias] = pred_df["predictions"]
 
         if qc.quantiles is not None:
-            for i, q in enumerate(qc.quantiles):
+            for q in qc.quantiles:
                 raw_col = str(q)
                 if raw_col in pred_df.columns:
                     pred_df[f"{self.alias}-q-{int(q * 100)}"] = pred_df[raw_col]
